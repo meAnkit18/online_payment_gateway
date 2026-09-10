@@ -1,6 +1,18 @@
 # SRS Summary (extracted from OnlinePaymentGateway.docx v1.0)
 
-> Full authoritative text is in `../OnlinePaymentGateway.docx`. This file is a Git-friendly mirror of requirements IDs for traceability.
+> Full authoritative text is in `OnlinePaymentGateway.docx` (same folder). This file is a Git-friendly mirror of requirements IDs for traceability.
+
+## Requirement Elicitation Methods (added post-v1.0, SRS.md mirror only)
+> `OnlinePaymentGateway.docx` v1.0 Approved is frozen — elicitation record lives here until next SRS revision.
+
+| # | Method | Applied to OPGS | Source / output |
+|---|---|---|---|
+| 1 | Stakeholder interviews | Merchant/Developer (API, keys, webhooks), Customer (checkout), QA (scenarios), Admin (fraud/rate-limit), PM (dashboard/reports) | User classes §2, REQ-F-001..080 scope |
+| 2 | Document analysis + benchmarking | Stripe Testing, Razorpay Test Mode, Dodo Payments docs (conceptual only); Wiegers template; IEEE-830; course material | References §1.5, deterministic scenarios, HMAC/webhook + TEST MODE design |
+| 3 | Brainstorming / workshops | Team sessions to enumerate outcomes: success/decline/insufficient/expired/blocked/timeout/fraud + delay 0–30s | REQ-F-011..018, fraud F-052..057, TEST-001..020 |
+| 4 | Use-case analysis | Actors + flows in Appendix B.3 (Create Payment, Checkout, Refund, Fraud Rule, API Key, Inspect Txn) | Use-case table, DFD externals/processes |
+| 5 | Prototyping / scenario walkthroughs | Checkout → auth/capture → webhook → refund/replay walkthroughs; dashboard explorer mock | Sequence B.4, state machine B.2, dashboard F-073..080 |
+| 6 | Questionnaire (lightweight) | Confirm TBDs: backend lang, Redis required?, retry/backoff, fraud set, rate-limit defaults, throughput, currencies, coverage | TBD-01..08 |
 
 ## REQ-F (functional)
 - F-001..010 Payment Initiation: POST /v1/payments, amount/currency/method/order-ref/metadata, smallest-unit integer, reject zero/negative/malformed, validate currency, unique payment ID, response id/status/amount/currency/created_at/next_action, 401 on bad creds, idempotency key no-dup
