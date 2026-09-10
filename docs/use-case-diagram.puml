@@ -1,0 +1,57 @@
+@startuml Online Payment Gateway Simulation - Use Case Diagram
+' Corrected version of "1. UML Use Case Diagram" image.
+' Fixes: removed crossing lines, fixed <<include>> directions, scoped actors properly.
+left to right direction
+skinparam packageStyle rectangle
+
+actor "Customer\n(Payer)" as Customer
+actor "Merchant\n(Business)" as Merchant
+actor "Administrator" as Admin
+actor "Simulated Bank /\nCard Network" as Bank
+actor "Notification\nService" as Notify
+
+rectangle "Online Payment Gateway Simulation" {
+  usecase "Make Payment" as UC_Make
+  usecase "Complete Checkout" as UC_Checkout
+  usecase "Request Refund" as UC_Refund
+  usecase "Create Merchant Account" as UC_CreateAcct
+  usecase "Configure Simulation Rules" as UC_SimRules
+  usecase "View Payment Status" as UC_Status
+  usecase "View Transactions" as UC_ViewTx
+  usecase "Generate API Keys" as UC_GenKeys
+  usecase "Manage API Keys" as UC_ManageKeys
+  usecase "Cancel Payment" as UC_Cancel
+  usecase "Configure Webhooks" as UC_Webhooks
+  usecase "View System Logs" as UC_Logs
+  usecase "Manage Merchants" as UC_ManageMerch
+  usecase "Inspect Transaction History" as UC_History
+
+  UC_Make ..> UC_Checkout : <<include>>
+  UC_Status ..> UC_ViewTx : <<include>>
+  UC_ViewTx ..> UC_History : <<include>>
+  UC_Refund ..> UC_ViewTx : <<include>>
+}
+
+Customer --> UC_Make
+Customer --> UC_Checkout
+Customer --> UC_Status
+Merchant --> UC_CreateAcct
+Merchant --> UC_Refund
+Merchant --> UC_SimRules
+Merchant --> UC_ViewTx
+Merchant --> UC_ManageKeys
+Admin --> UC_Cancel
+Admin --> UC_Webhooks
+Admin --> UC_Logs
+Admin --> UC_ManageMerch
+Admin --> UC_SimRules
+Admin --> UC_GenKeys
+Bank --> UC_Make
+Notify --> UC_Webhooks
+
+note bottom
+  All flows are SIMULATED (TEST MODE).
+  No real bank / card network contacted.
+  REQ-F-001..080 traceable; see docs/SRS.md
+end note
+@enduml
