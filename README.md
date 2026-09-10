@@ -1,4 +1,4 @@
-# online_payment_gateway
+# online_payment_gateway_Simulation
 
 Online Payment Gateway Simulation (OPGS) — academic sandbox for end-to-end payment workflows. No real money, banks, or card networks involved.
 
