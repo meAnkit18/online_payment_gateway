@@ -65,7 +65,7 @@ Multi-tenant isolation, REST + standard codes, deterministic scenarios, async we
 TBD-01 backend lang, TBD-02 Redis required?, TBD-03 retry/backoff tuning, TBD-04 fraud set, TBD-05 default rate limit, TBD-06 throughput, TBD-07 extra currencies, TBD-08 final coverage.
 
 ## 12. Requirement Elicitation Methods (added post-v1.0, mirror only)
-> `OnlinePaymentGateway.docx` v1.0 Approved is frozen — record lives here + `SRS.md` until next revision.
+> `OPGS_SRS_IEEE.docx` v1.0 Approved is frozen — record lives here + `SRS.md` until next revision.
 
 - Interviews (merchant/dev, customer, QA, admin, PM) → scope + REQ-F-001..080
 - Document analysis / benchmarking (Stripe/Razorpay/Dodo conceptual, Wiegers, IEEE-830) → §1.5 references, webhook/HMAC + TEST MODE
@@ -74,4 +74,4 @@ TBD-01 backend lang, TBD-02 Redis required?, TBD-03 retry/backoff tuning, TBD-04
 - Prototyping / walkthroughs → checkout→capture→webhook→refund, dashboard explorer
 - Questionnaire (lightweight) → TBD-01..08 confirmation
 
-Full detail: `SRS.md` + `OnlinePaymentGateway.docx`. Diagrams: `../images/` + `use-case-diagram.puml` + `dfd-*.puml`.
+Full detail: `SRS.md` + `OPGS_SRS_IEEE.docx`. Diagrams: `../images/` + `use-case-diagram.puml` + `dfd-*.puml`.
