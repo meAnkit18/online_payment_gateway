@@ -1,21 +1,5 @@
 # Software Requirements Specification — Online Payment Gateway Simulation (OPGS)
 
-> Git-friendly mirror of `OPGS_SRS_IEEE.docx` v1.0 Approved (2026-09-10). Full authoritative text is in `OPGS_SRS_IEEE.docx` (same folder). Formatted per **IEEE Std 830-1998**. Post-v1.0 additions (DFD, elicitation record) are marked and live here until the next docx revision. TEST MODE only — no real money, banks, or card networks.
-
-## Revision history
-| Version | Date | Author | Change |
-|---|---|---|---|
-| 1.0 | 2026-09-10 | Project Team | Approved SRS (Wiegers/IEEE-830 based, REQ-F-001..080, BR-001..010, TEST-001..020) |
-| 1.1-mirror | 2026-09-10 | Mirror | Reformat `SRS.md` to IEEE 830 structure; add DFD Appendix B.5 + elicitation record (docx frozen) |
-
-## Table of contents (IEEE 830)
-- 1 Introduction (1.1 Purpose, 1.2 Scope, 1.3 Definitions, 1.4 References, 1.5 Overview)
-- 2 Overall description (2.1 Perspective, 2.2 Functions, 2.3 Users, 2.4 Constraints, 2.5 Assumptions, 2.6 Apportioning)
-- 3 Specific requirements (3.1 External interfaces, 3.2 Functional REQ-F, 3.3 Performance, 3.4 Design constraints, 3.5 Attributes, 3.6 Other incl. BR)
-- Appendix A Glossary | Appendix B Analysis models | Appendix C TBD + elicitation | Traceability
-
----
-
 ## 1. Introduction
 
 ### 1.1 Purpose
