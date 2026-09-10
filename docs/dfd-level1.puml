@@ -1,0 +1,105 @@
+@startuml OPGS - DFD Level 1 (P2, P3, P4, P5 detail)
+' Online Payment Gateway Simulation - DFD Level 1
+' Decomposes Level 0 processes 2.0, 3.0, 4.0, 5.0. Each subprocess preserves
+' balancing: inputs/outputs match parent Level 0 flows.
+left to right direction
+skinparam packageStyle rectangle
+skinparam databaseStyle postgres
+
+title OPGS DFD - Level 1 (detail of P2 / P3 / P4 / P5)
+
+actor "Merchant App" as MerchantApp
+actor "Customer" as Customer
+actor "Administrator" as Admin
+actor "Merchant Webhook\nEndpoint" as WebhookEP
+
+' ============ P2 detail ============
+package "P2 Process Payments" {
+  rectangle "2.1\nAuthenticate &\nValidate Request" as P21
+  rectangle "2.2\nCreate Payment\n(CREATED→PENDING)" as P22
+  rectangle "2.3\nAuthorize\n(Simulation)" as P23
+  rectangle "2.4\nCapture /\nFail / Expire" as P24
+}
+database "D1\nPayments" as D1
+database "D2\nMerchants /\nAPI Keys" as D2
+database "D5\nScenarios /\nRules" as D5
+
+MerchantApp --> P21 : payment_request + Bearer\n(idempotency_key check)
+P21 <--> D2 : verify test_sk_*, 401/403,\nrate-limit pre-check (429)
+P21 --> P22 : valid request\n(amount>0, currency INR/USD)
+P21 --> MerchantApp : 400/401/403/422\n+ correlation_id
+P22 <--> D1 : insert payment + history\nunique payment_id
+Customer --> P23 : checkout_input (synthetic)
+P23 <--> D5 : scenario select\n(success/decline/insufficient/\nexpired/blocked/timeout) + delay
+P23 --> P24 : auth verdict + code
+P24 <--> D1 : AUTHORIZED→CAPTURED\nor →FAILED / →EXPIRED\n+ timestamps + reason
+P24 --> MerchantApp : payment_response\n+ next_action
+
+' ============ P4 detail (screening called by P2/P3) ============
+package "P4 Fraud & Rate-Limit" {
+  rectangle "4.1\nAmount Rule\nCheck" as P41
+  rectangle "4.2\nVelocity\n(N / window)" as P42
+  rectangle "4.3\nCountry / BIN\nMismatch Check" as P43
+  rectangle "4.4\nRate-Limit\nEnforce" as P44
+}
+database "D6\nAudit Log" as D6
+
+P22 --> P41 : screen new payment
+P23 --> P41 : screen auth attempt
+P41 --> P42 : pass (amount ok)
+P42 --> P43 : pass (velocity ok)
+P43 --> P44 : pass (should-check)
+P44 --> P24 : allow
+P41 --> P24 : fraud_risk_blocked\n(rule+timestamp → D6)
+P42 --> P24 : fraud_risk_blocked
+P43 --> P24 : fraud_risk_blocked
+P44 --> MerchantApp : 429 + Retry-After
+P44 <--> D5 : read limits/rules\n(toggle without restart)
+Admin --> P44 : update rules
+
+' ============ P3 detail ============
+package "P3 Refunds & Cancellations" {
+  rectangle "3.1\nValidate Eligibility\n(captured only)" as P31
+  rectangle "3.2\nCreate Refund\n(full / partial)" as P32
+  rectangle "3.3\nSimulate Refund\nOutcome" as P33
+  rectangle "3.4\nCancel / Expire\nPayment" as P34
+}
+database "D3\nRefunds" as D3
+
+MerchantApp --> P31 : refund/cancel_request
+P31 <--> D1 : check state + Σ partials\n≤ captured; reject\nfailed/cancelled/fully-refunded
+P31 --> P32 : eligible
+P31 --> MerchantApp : 404/409/422 on ineligible
+P32 <--> D3 : unique refund_id\n(idempotent replay safe)
+P32 <--> D5 : refund success/fail config
+P33 <--> D3 : refund_initiated→\nrefunded / refund_failed
+P33 <--> D1 : captured→refund path\n(full history preserved)
+P34 <--> D1 : pending→cancelled\npending→expired
+P32 --> MerchantApp : refund_response
+
+' ============ P5 detail ============
+package "P5 Webhook Events" {
+  rectangle "5.1\nCreate & Sign\nEvent" as P51
+  rectangle "5.2\nQueue &\nDispatch" as P52
+  rectangle "5.3\nRetry &\nReplay" as P53
+}
+database "D4\nEvents /\nWebhook Logs" as D4
+
+P24 --> P51 : payment.authorized/\ncaptured/failed/cancelled
+P33 --> P51 : refund.initiated/processed
+P34 --> P51 : payment.cancelled
+P51 <--> D4 : event_id, type,\ncreated_at, api_version, data\nHMAC-SHA256 sign
+P51 --> P52 : signed payload
+P52 --> WebhookEP : POST <1s queued,\n<2s dispatch
+P52 <--> D4 : status/body/attempts/time
+P52 --> P53 : on failure (≠ rollback)
+P53 --> WebhookEP : exp-backoff retry\nup to max
+Admin --> P53 : replay request
+P53 --> MerchantApp : replayed delivery
+
+note bottom
+  Balancing: P2 in = payment_request + checkout_input; out = payment_response.
+  P3 in = refund/cancel_request; out = refund_response. P5 out = webhook_event.
+  Failure never corrupts payment; terminal states immutable.
+end note
+@enduml

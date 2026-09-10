@@ -43,6 +43,9 @@ Corrected PlantUML sources are in `docs/` — start with `use-case-diagram.puml`
     ├── Requirements-Report.md
     ├── SRS.md
     ├── use-case-diagram.puml
+    ├── dfd-context.puml
+    ├── dfd-level0.puml
+    ├── dfd-level1.puml
     └── diagrams/
 ```
 

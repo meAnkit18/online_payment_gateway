@@ -35,3 +35,24 @@ created→pending→authorized→captured; created→pending→failed; created�
 
 ## Patterns (B.6)
 Strategy (Card/UPI/NetBanking), Factory (payment/refund/event), Observer (state→webhook), Repository (DB abstraction), State (lifecycle), Adapter (future providers)
+
+## DFD (Appendix B.5 — added post-v1.0, SRS.md mirror only)
+> `OnlinePaymentGateway.docx` v1.0 Approved is frozen — DFD lives here + PlantUML sources until next SRS revision.
+
+- Sources: `docs/dfd-context.puml` (Context, Process 0), `docs/dfd-level0.puml` (Level 0, 6 processes), `docs/dfd-level1.puml` (Level 1 detail P2/P3/P4/P5). Notation: Gane-Sarson.
+- Context: single process `0 OPGS`; externals `Merchant App/Developer, Customer (Test Payer), Administrator, Merchant Webhook Endpoint`. Simulated Bank is internal (Simulation Engine), not external. All flows TEST MODE, no real network.
+- Level 0: `1.0 Manage Merchants & Keys (F-058..065)`, `2.0 Process Payments (F-001..026)`, `3.0 Refunds/Cancel (F-043..051)`, `4.0 Fraud/Rate-limit (F-052..057,066..072)`, `5.0 Webhook Events (F-035..042)`, `6.0 Dashboard (F-073..080)`.
+- Level 1: `2.1 Authenticate/Validate → 2.2 Create (CREATED→PENDING) → 2.3 Authorize (scenario+delay) → 2.4 Capture/Fail/Expire`; `4.1 Amount → 4.2 Velocity N/window → 4.3 BIN/country → 4.4 Rate-limit (429+Retry-After)`; `3.1 Eligibility (captured only, Σ partials ≤ captured) → 3.2 Create refund ID (idempotent) → 3.3 Simulate outcome → 3.4 Cancel/Expire`; `5.1 Create+Sign (HMAC-SHA256) → 5.2 Queue (<1s)/Dispatch (<2s) → 5.3 Exp-backoff retry + replay (failure ≠ rollback)`.
+- Balancing: P2 in = payment_request + checkout_input, out = payment_response; P3 in = refund/cancel_request, out = refund_response; P5 out = webhook_event.
+
+### Data dictionary (core)
+| Store / Flow | Contents |
+|---|---|
+| D1 Payments | payment_id (unique), merchant_id, amount (smallest-unit int >0), currency (INR/USD), method, status, timestamps, decline_code, history[] |
+| D2 Merchants/API Keys | merchant_id, test_pk_*/test_sk_* (secret hashed, plaintext only at creation), isolation per merchant |
+| D3 Refunds | refund_id (unique), payment_id, amount, status (refund_initiated/refunded/refund_failed), idempotency |
+| D4 Events/Webhook Logs | event_id (unique), type, created_at, api_version, data, signature, status/body/attempts/time |
+| D5 Scenarios/Rules | method→outcome mapping, delay 0–30s, fraud rules, rate limits, refund success/fail (toggle without restart/code change) |
+| D6 Audit Log | key/config/auth/transition events + rule+timestamp |
+| payment_request | amount, currency, method, order_ref, metadata, idempotency_key + Bearer auth |
+| webhook_event | event_id, type, created_at, api_version, data + HMAC-SHA256 header |

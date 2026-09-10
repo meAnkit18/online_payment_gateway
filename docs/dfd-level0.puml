@@ -1,0 +1,71 @@
+@startuml OPGS - DFD Level 0
+' Online Payment Gateway Simulation - DFD Level 0 (functional decomposition)
+' Option A: 6 processes mapped to REQ-F groups. Gane-Sarson approximation.
+left to right direction
+skinparam packageStyle rectangle
+skinparam databaseStyle postgres
+
+title OPGS DFD - Level 0 (decomposition of Process 0)
+
+actor "Merchant App\n/ Developer" as MerchantApp
+actor "Customer\n(Test Payer)" as Customer
+actor "Administrator" as Admin
+actor "Merchant Webhook\nEndpoint" as WebhookEP
+
+rectangle "1.0\nManage Merchants\n& API Keys" as P1
+rectangle "2.0\nProcess Payments\n(create/auth/capture)" as P2
+rectangle "3.0\nProcess Refunds\n& Cancellations" as P3
+rectangle "4.0\nApply Fraud &\nRate-Limit Rules" as P4
+rectangle "5.0\nGenerate & Deliver\nWebhook Events" as P5
+rectangle "6.0\nServe Dashboard\nQueries" as P6
+
+database "D1\nPayments" as D1
+database "D2\nMerchants /\nAPI Keys" as D2
+database "D3\nRefunds" as D3
+database "D4\nEvents /\nWebhook Logs" as D4
+database "D5\nScenarios /\nRules" as D5
+database "D6\nAudit Log" as D6
+
+' --- External -> processes ---
+MerchantApp --> P1 : credentials,\nkey rotate/revoke\n[REQ-F-058..065]
+MerchantApp --> P2 : payment_request\n+ Bearer test_sk_*\n[REQ-F-001..010]
+Customer --> P2 : checkout_input\n(synthetic)\n[REQ-F-011..018]
+MerchantApp --> P3 : refund/cancel_request\n[REQ-F-043..051]
+Admin --> P1 : merchant admin\n[UC_ManageMerch]
+Admin --> P4 : fraud/rate-limit/\nscenario config\n[REQ-F-052..057,066..072]
+Admin --> P5 : webhook config\n+ replay request\n[REQ-F-035..042]
+MerchantApp --> P6 : dashboard_query
+
+' --- Process <-> stores ---
+P1 <--> D2 : read/write merchant,\nkey hash, prefix test_pk_/sk_
+P1 --> D6 : key/config/auth audit
+P2 <--> D1 : create/read/update\npayment + history\n(CREATED/PENDING/\nAUTHORIZED/CAPTURED/\nFAILED/CANCELLED/EXPIRED)
+P2 <--> D5 : read scenario mapping\n+ artificial delay 0-30s
+P2 --> P4 : screen(payment, velocity,\nBIN/country, amount)
+P4 --> P2 : verdict\n(allow / fraud_risk_blocked)
+P4 <--> D5 : read fraud/rate-limit rules
+P4 --> D6 : rule+timestamp audit
+P3 <--> D1 : check captured,\ntransition matrix
+P3 <--> D3 : refund id, amount,\nstatus (Σ partials ≤ captured)
+P3 <--> D5 : refund success/fail config
+P2 --> P5 : state transition\n(payment.authorized/\ncaptured/failed,\npayment.cancelled)
+P3 --> P5 : refund.initiated/\nprocessed
+P5 <--> D4 : event_id, payload,\nstatus/body/attempts/time
+P5 --> WebhookEP : POST signed JSON\n(exp-backoff retry, max)
+P6 <--> D1 : search/filter payments
+P6 <--> D3 : refunds detail
+P6 <--> D4 : events + webhook logs
+P2 --> D6 : transition audit
+P3 --> D6 : refund audit
+
+' --- Outputs ---
+P2 --> MerchantApp : payment_response\n+ decline codes\n(card_declined/\ninsufficient_funds/\nexpired_card/timeout)
+P3 --> MerchantApp : refund_response\n(id, payment_id,\namount, status)
+P5 --> MerchantApp : replayed events\n(dashboard)
+P6 --> MerchantApp : dashboard_view\n[TEST MODE]
+
+note bottom
+  Decomposes to Level 1: P2/P3/P4/P5 in docs/dfd-level1.puml
+  Terminal states immutable; webhook failure never rolls back payment (BR).
+end note
+@enduml

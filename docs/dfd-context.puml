@@ -1,0 +1,38 @@
+@startuml OPGS - Context Diagram (Level -1 / Level 0 Context)
+' Online Payment Gateway Simulation - DFD Context
+' Gane-Sarson notation approximated: rectangle = process, actor = external entity
+' Traceable to REQ-F-001..080, BR-001..010. TEST MODE only.
+left to right direction
+skinparam packageStyle rectangle
+skinparam actorStyle awesome
+
+title OPGS DFD - Context (Process 0: Online Payment Gateway Simulation)
+
+actor "Merchant App\n/ Developer" as MerchantApp
+actor "Customer\n(Test Payer)" as Customer
+actor "Administrator" as Admin
+actor "Merchant Webhook\nEndpoint" as WebhookEP
+
+rectangle "0\nOnline Payment Gateway\nSimulation" as P0
+
+' --- Inputs to system ---
+MerchantApp --> P0 : payment_request\n(amount smallest-unit,\ncurrency, method, order_ref,\nmetadata, idempotency_key)\n[REQ-F-001..010]
+MerchantApp --> P0 : refund_request\n(payment_id, amount)\n[REQ-F-043..051]
+MerchantApp --> P0 : dashboard_query\n(filter status/method/date,\nsearch id/ref)\n[REQ-F-073..080]
+Customer --> P0 : checkout_input\n(synthetic card / UPI /\nnet-banking)\n[REQ-F-011..018]
+Admin --> P0 : admin_config\n(scenarios, fraud_rules,\nrate_limits, keys,\nwebhooks)\n[REQ-F-052..072]
+
+' --- Outputs from system ---
+P0 --> MerchantApp : payment_response\n(id, status, amount,\ncurrency, created_at,\nnext_action) + errors\n401/403/404/409/422/429
+P0 --> MerchantApp : dashboard_view\n(payments, history,\nevents, refunds)\n[TEST MODE banner]
+P0 --> Customer : checkout_result\n(authorized / captured /\nfailed + decline_code)
+P0 --> WebhookEP : webhook_event\n(event_id, type, created_at,\napi_version, data)\nHMAC-SHA256 signed\n[REQ-F-035..042]
+P0 --> Admin : audit_view\n(key/config/auth events)
+
+note bottom
+  Single process 0 decomposes to Level 0 (6 processes).
+  No real money / bank / card network contacted.
+  Amounts in smallest-unit integer; zero/negative rejected (BR).
+  See docs/dfd-level0.puml, docs/dfd-level1.puml
+end note
+@enduml
