@@ -48,3 +48,4 @@ Corrected PlantUML sources are in `docs/` — start with `use-case-diagram.puml`
 
 ## Safety
 TEST MODE only. Synthetic credentials. No real financial network contact. See SRS §5.2.
+ 
